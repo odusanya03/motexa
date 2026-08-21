@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import jwt from "@fastify/jwt";
 import "dotenv/config";
+import { prisma } from "./lib/prisma.js";
 
 const app = Fastify({
   logger: true,
@@ -23,6 +24,24 @@ app.get("/health", async () => {
     status: "ok",
     service: "motexa-api",
   };
+});
+
+app.get("/health/db", async (_request, reply) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+
+    return {
+      status: "ok",
+      database: "connected",
+    };
+  } catch (error) {
+    app.log.error(error);
+
+    return reply.status(503).send({
+      status: "error",
+      database: "disconnected",
+    });
+  }
 });
 
 const port = Number(process.env.PORT ?? 4000);
